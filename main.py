@@ -8,13 +8,22 @@ class BloomFilter:
 
     def __init__(self, expected_items, false_positive_rate):
 
+        if not (0 < false_positive_rate < 1):
+            raise ValueError("false_positive_rate должен быть в диапазоне (0, 1)")
+
+        if expected_items <= 0:
+            raise ValueError("expected_items должно быть положительным числом")
+
         self.bit_array_size = int(- (expected_items * math.log(false_positive_rate)) / (math.log(2) ** 2))
         self.number_hash_functions = round((self.bit_array_size / expected_items) * math.log(2))
 
         self.bit_map = [0] * self.bit_array_size  # создаём список нулей
 
     def _hash(self, item, k):
-        return hash((item, k)) % self.bit_array_size
+        try:
+            return hash((item, k)) % self.bit_array_size
+        except Exception as e:
+            raise ValueError(f"Ошибка при хэшировании: {e}")
 
     def add_to_filter(self, item):
         for i in range(self.number_hash_functions):
@@ -60,9 +69,15 @@ def run_performance_test():
     #Время генерации файлов
     gen_time = time.time() - start
 
-    #Время старта генерации файлов
+    #Время старта создания фильтра
     start_add = time.time()
-    bloom_filter = BloomFilter(expected_items=num_files, false_positive_rate=false_positive_rate)
+
+    try:
+        bloom_filter = BloomFilter(expected_items=num_files, false_positive_rate=false_positive_rate)
+    except ValueError as e:
+        print(f"Ошибка при создании фильтра Блума: {e}")
+        return
+
     for i in file_list:
         bloom_filter.add_to_filter(i)
 
@@ -91,7 +106,10 @@ def run_performance_test():
     print(f"- Проверка несуществующего: {time_unknown:.6f} сек → {result_unknown}")
 
 def main():
-    run_performance_test()
+    try:
+        run_performance_test()
+    except Exception as e:
+        print(f"Что-то пошло не так: {e}")
 
 if __name__ == "__main__":
     main()
